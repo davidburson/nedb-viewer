@@ -1,0 +1,90 @@
+{
+  "name": "nedb-viewer",
+  "version": "0.1.0",
+  "main": "index.js",
+  "build": {
+    "electronVersion": "2.0.9",
+    "appId": "com.fmosoft.nedb-viewer",
+    "productName": "Nedb Viewer",
+    "copyright": "Copyright © 2018 by fmosoft",
+    "directories": {
+      "app": "build",
+      "output": "build-native"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "icon": "public/images/literacy_images.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.other",
+      "icon": "public/images/literacy_images.icns"
+    },
+    "linux": {
+      "target": "deb",
+      "icon": "./public/images/linux-icons/",
+      "synopsis": "Nedb Viewer - Copyright 2018 by fmosoft.",
+      "description": "Nedb Viewer - Copyright 2018 by fmosoft.",
+      "category": "Other",
+      "desktop": {
+        "Name": "Nedb Viewer"
+      }
+    }
+  },
+  "scripts": {
+    "start": "cd build && electron .",
+    "start-debug-main": "cd build && electron --inspect-brk=5858 .",
+    "build": "npm run scss && node build.js && cd build && yarn install --production && cd .. && babel src --out-dir build",
+    "copy": "node copy.js",
+    "watch": "babel src --watch --out-dir build",
+    "build-native": "electron-builder --dir",
+    "pack-native": "electron-builder",
+    "complete-build": "yarn install && node empty-build-folders.js && npm run build && npm run pack-native",
+    "scss": "npm run css-compile && npm run css-prefix && npm run css-minify",
+    "css-compile": "node-sass --output-style expanded --source-map true --source-map-contents true --precision 6 scss/main.scss public/css/main.css",
+    "css-prefix": "postcss --config postcss/config.js --replace \"public/css/main.css\"",
+    "css-minify": "cleancss --level 1 --source-map --source-map-inline-sources --output public/css/main.min.css public/css/main.css",
+    "watch-scss": "nodemon -w scss -e scss -x \"npm run scss\""
+  },
+  "dependencies": {
+    "fs-extra-promise": "^1.0.1",
+    "jquery": "^3.2.1",
+    "lodash": "^4.17.4",
+    "nedb": "^1.8.0",
+    "prop-types": "^15.6.0",
+    "react": "^16.2.0",
+    "react-contextmenu": "^2.9.2",
+    "react-dom": "^16.2.0",
+    "react-split-pane": "^0.1.82",
+    "rmrf-promise": "^1.1.0",
+    "sweetalert2": "^7.26.12",
+    "co": "latest"
+  },
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-syntax-async-functions": "^6.13.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-react": "^6.24.1",
+    "bootstrap": "^4.1.1",
+    "clean-css-cli": "^4.1.10",
+    "colors": "^1.2.5",
+    "electron": "^2.0.1",
+    "electron-builder": "^20.13.4",
+    "eslint": "^4.15.0",
+    "eslint-plugin-react": "^7.5.1",
+    "font-awesome": "^4.7.0",
+    "node-sass": "^4.7.2",
+    "nodemon": "^1.14.11",
+    "postcss-cli": "^4.1.1"
+  }
+}
