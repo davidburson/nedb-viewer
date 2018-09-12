@@ -10,11 +10,12 @@ class DB {
         _.bindAll(['getTableRows']);
     }
 
-    async getTableRows() {
-        return await new Promise(resolve => this._table.find({}, (err, docs) => {
+    async getTableRows(findQuery) {
+        return await new Promise(resolve => this._table.find(findQuery, (err, docs) => {
             if (err) {
                 this._handleError(err);
             } else {
+                console.log('docx', docs);
                 resolve(docs);
             }
         }));

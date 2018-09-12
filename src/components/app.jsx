@@ -9,6 +9,7 @@ import DB from '../db';
 import Columns from './column';
 
 const dbFolderId = 'dbFolderId';
+const findId = 'findId';
 
 class App extends React.Component {
     constructor(props) {
@@ -19,11 +20,12 @@ class App extends React.Component {
             tables: [],
             selectedTableName: '',
             selectedTableRows: [],
+            findQuery: '{}',
         };
     }
 
     render() {
-        const { dbFolder, tables, selectedTableName, selectedTableRows } = this.state;
+        const { dbFolder, tables, selectedTableName, selectedTableRows, findQuery } = this.state;
 
         const onClickBrowse = e => {
             e.preventDefault();
@@ -55,13 +57,26 @@ class App extends React.Component {
             folderChanged(newFolder);
         };
 
-        const onClickTableName = async e => {
-            e.preventDefault();
+        const onKeyDownFindQuery = async e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                await setTableRows(selectedTableName);
+            }
+        };
 
-            const tableName = e.target.id;
+        const onChangeFindQuery = e => {
+            e.preventDefault();
+            this.setState({ findQuery: e.target.value });
+        };
+
+
+        const setTableRows = async tableName => {
+            const looseJsonParse = obj => {
+                return Function('"use strict";return (' + obj + ')')();
+            };
 
             const db = new DB(dbFolder, tableName, this.props.handleError);
-            const rows = await db.getTableRows();
+            const rows = await db.getTableRows(looseJsonParse(findQuery));
 
             this.setState({
                 selectedTableName: tableName,
@@ -69,10 +84,23 @@ class App extends React.Component {
             });
         };
 
+        const onClickTableName = async e => {
+            e.preventDefault();
+
+            const tableName = e.target.id;
+            await setTableRows(tableName);
+        };
+
         const styles = {
             selectedBtn: {
                 backgroundColor: '#DDDDDD',
-            }
+            },
+            scrollableRows: {
+                height: 'auto',
+                maxHeight: 600,
+                //minHeight: regionSplitSize,
+                overflowX: 'hidden'
+            },
         };
 
         const listTableNames = () => {
@@ -90,8 +118,6 @@ class App extends React.Component {
 
         const showSelectedTable = () => {
             if (selectedTableRows.length === 0) return (<div />);
-
-            console.log('seltblrows', selectedTableRows);
 
             const columns = selectedTableRows.reduce((a, r) => {
                 const keys = Object.keys(r);
@@ -114,7 +140,17 @@ class App extends React.Component {
                     <div>
                         {listTableNames()}
                     </div>
-                    {showSelectedTable()}
+                    <div>
+                        <div className="row mt-1 mx-1">
+                            <label htmlFor={findId} className="ml-2 mt-2">find: </label>
+                            <div className="col mt-1">
+                                <input type="text" id={findId} className="w-100" value={findQuery} onKeyDown={onKeyDownFindQuery} onChange={onChangeFindQuery} />
+                            </div>
+                        </div>
+                        <div className="m-0 p-0" style={styles.scrollableRows}>
+                            {showSelectedTable()}
+                        </div>
+                    </div>
                 </SplitPane>
             </div>
         );
