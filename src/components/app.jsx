@@ -1,7 +1,7 @@
 import React from 'react';
 import propTypes from 'prop-types';
 import fs from 'fs-extra-promise';
-import { remote } from 'electron';
+import { remote, ipcRenderer } from 'electron';
 import SplitPane from 'react-split-pane';
 import _ from 'lodash';
 
@@ -10,6 +10,8 @@ import Columns from './column';
 
 const dbFolderId = 'dbFolderId';
 const findId = 'findId';
+const startRowId = 'startRowId';
+const maxRowsToShow = 60;   // Needs to be bigger than the most rows that can be visible.  On my big monitor, that's about 53.
 
 class App extends React.Component {
     constructor(props) {
@@ -22,11 +24,15 @@ class App extends React.Component {
 
             this.setState({
                 windowHeight: newHeight,
+                gridWidth: this.gridDiv.offsetWidth,
             });
         }, 10));
 
+        const initialSize = remote.getCurrentWindow().getContentSize();
+
         this.state = {
-            windowHeight: remote.getCurrentWindow().getContentSize()[1],
+            windowHeight: initialSize[1],
+            gridWidth: 0,
             firstRender: true,
             headerHeight: 40,
             dbFolder: '/Users/david/Downloads/iftest/db',  //'',
@@ -34,11 +40,21 @@ class App extends React.Component {
             selectedTableName: '',
             selectedTableRows: [],
             findQuery: '{}',
+            startRowIdx: 0,
         };
+
+        _.bindAll(this, ['showRow']);
+    }
+
+    showRow(row) {
+        ipcRenderer.send('showRowWindow', row);
     }
 
     render() {
-        const { dbFolder, tables, selectedTableName, selectedTableRows, findQuery, windowHeight, headerHeight, firstRender } = this.state;
+        const {
+            dbFolder, tables, selectedTableName, selectedTableRows, findQuery, windowHeight, gridWidth,
+            headerHeight, firstRender, startRowIdx
+        } = this.state;
 
         const onClickBrowse = e => {
             e.preventDefault();
@@ -94,7 +110,13 @@ class App extends React.Component {
             this.setState({
                 selectedTableName: tableName,
                 selectedTableRows: rows,
+                startRowIdx: 0,
             });
+        };
+
+        const onChangeStartRowIdx = e => {
+            e.preventDefault();
+            this.setState({ startRowIdx: parseInt(e.target.value, 10) });
         };
 
         const onClickTableName = async e => {
@@ -102,6 +124,14 @@ class App extends React.Component {
 
             const tableName = e.target.id;
             await setTableRows(tableName);
+        };
+
+        const onChangeMainSplit = () => {
+            setTimeout(() => {
+                this.setState({
+                    gridWidth: this.gridDiv.offsetWidth,
+                });
+            });
         };
 
         const tableNamesHeight = windowHeight - headerHeight - 10;
@@ -118,6 +148,10 @@ class App extends React.Component {
                 minHeight: tableNamesHeight,
                 overflowX: 'hidden'
             },
+            startRow: {
+                minWidth: 100,
+                maxWidth: 100,
+            }
         };
 
         const listTableNames = () => {
@@ -141,13 +175,20 @@ class App extends React.Component {
                 return _.uniq([...a, ...keys]);
             }, []);
 
-            return Columns( { columns, idx: 0, rows: selectedTableRows });
+            return Columns({
+                columns,
+                idx: 0,
+                rows: selectedTableRows.slice(startRowIdx, startRowIdx + maxRowsToShow),
+                totalWidth: gridWidth,
+                showRow: this.showRow,
+            });
         };
 
         if (firstRender) {
             setTimeout(() => this.setState({
                 firstRender: false,
-                headerHeight: this.headerDiv.offsetHeight
+                headerHeight: this.headerDiv.offsetHeight,
+                gridWidth: this.gridDiv.offsetWidth,
             }));
         }
 
@@ -156,20 +197,31 @@ class App extends React.Component {
                 <div ref={node => this.headerDiv = node} className="row mt-1">
                     <label htmlFor={dbFolderId} className="ml-2 mt-2">Database Folder: </label>
                     <div className="col mt-1">
-                        <input type="text" id={dbFolderId} className="w-100" value={dbFolder} onChange={onChangeDbFolder} />
+                        <input type="text" id={dbFolderId} className="w-100" value={dbFolder}
+                               onChange={onChangeDbFolder} />
                     </div>
                     <button className="btn btn-outline-primary mr-2" onClick={onClickBrowse}>...</button>
                 </div>
-                <SplitPane split="vertical" defaultSize={200} minSize={150} maxSize={-100} style={styles.allSplits}>
+                <SplitPane split="vertical" defaultSize={200} minSize={150} maxSize={-100} style={styles.allSplits} onChange={onChangeMainSplit}>
                     <div style={styles.scrollableTables}>
                         {listTableNames()}
                     </div>
-                    <div>
+                    <div ref={node => this.gridDiv = node}>
                         <div className="row mt-1 mx-1">
                             <label htmlFor={findId} className="ml-2 mt-2">find: </label>
                             <div className="col mt-1">
-                                <input type="text" id={findId} className="w-100" value={findQuery} onKeyDown={onKeyDownFindQuery} onChange={onChangeFindQuery} />
+                                <input type="text" id={findId} className="w-100" value={findQuery}
+                                       onKeyDown={onKeyDownFindQuery} onChange={onChangeFindQuery} />
                             </div>
+                        </div>
+                        <div className="row mx-1">
+                            <label htmlFor={startRowId} className="mt-1 mx-2">Row start index: </label>
+                            <span>
+                                <input type="number" id={startRowId} style={styles.startRow} min={0}
+                                       max={selectedTableRows.length - 1} step={10} value={startRowIdx}
+                                       onChange={onChangeStartRowIdx} />
+                                <label className="mx-2">Total rows: {selectedTableRows.length}</label>
+                            </span>
                         </div>
                         <div className="m-0 p-0">
                             {showSelectedTable()}
@@ -180,6 +232,7 @@ class App extends React.Component {
         );
     }
 }
+
 App.propTypes = {
     handleError: propTypes.func,
 };

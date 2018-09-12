@@ -41,6 +41,27 @@ app.on('ready', async() => {
 
     appWindow.loadURL(`file://${__dirname}/index.html`);
 
+    appWindow.on('close', () => {
+        app.quit();
+    });
+
+    ipcMain.on('showRowWindow', (event, row) => {
+        const rowWindow = new BrowserWindow({
+            show: false,
+            width: 800,
+            height: 800,
+            minWidth: 400,
+            minHeight: 400,
+        });
+
+        rowWindow.once('ready-to-show', () => {
+            rowWindow.send('data', { row });
+            rowWindow.show();
+        });
+
+        rowWindow.loadURL(`file://${__dirname}/row.html`);
+    });
+
     // So we can log stuff from renderer on the main console, for when we can't get to the renderer console,
     //  Such as when the window won't render at all, or when we want to log data in a function that closes a window.
     ipcMain.on('logOnMain', (e, data) => console.log(data));

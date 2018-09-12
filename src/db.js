@@ -15,7 +15,6 @@ class DB {
             if (err) {
                 this._handleError(err);
             } else {
-                console.log('docx', docs);
                 resolve(docs);
             }
         }));

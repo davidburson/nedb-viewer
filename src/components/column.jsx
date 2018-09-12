@@ -2,11 +2,17 @@ import React from 'react';
 import propTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 
-const Columns = ({ columns, idx, rows }) => {
+const Columns = ({ columns, idx, rows, totalWidth, showRow }) => {
     const nextColumn = () => {
-        if (idx === columns.length) return (<div />);
+        if (idx === columns.length - 1) return (<div />);
 
-        return Columns({ columns, idx: idx + 1, rows });
+        return Columns({
+            columns,
+            idx: idx + 1,
+            rows,
+            totalWidth,
+            showRow,
+        });
     };
 
     const styles = {
@@ -50,7 +56,7 @@ const Columns = ({ columns, idx, rows }) => {
                 const style = i % 2 === 1 ? styles.stripe : {};
                 return ([
                     ...a,
-                    <div key={r._id} className="row w-100 mx-0 px-0" style={style}>
+                    <div key={r._id} className="row w-100 mx-0 px-0" style={style} onDoubleClick={() => showRow(r)}>
                         <span className="text-truncate">{displayValue}</span>
                     </div>
                 ]);
@@ -58,8 +64,10 @@ const Columns = ({ columns, idx, rows }) => {
         );
     };
 
+    const defaultWidth = Math.max(Math.floor(totalWidth / columns.length), 10);
+
     return (
-        <SplitPane split="vertical" defaultSize={75} minSize={5} maxSize={-5}>
+        <SplitPane split="vertical" defaultSize={defaultWidth} minSize={5} maxSize={-5}>
             <div>
                 {createRows()}
             </div>
@@ -71,6 +79,8 @@ Columns.propTypes = {
     columns: propTypes.arrayOf(propTypes.string),
     idx: propTypes.number,
     rows: propTypes.arrayOf(propTypes.object),
+    totalWidth: propTypes.number,
+    showRow: propTypes.func,
 };
 
 export default Columns;
