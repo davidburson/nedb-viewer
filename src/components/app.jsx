@@ -15,7 +15,20 @@ class App extends React.Component {
     constructor(props) {
         super(props);
 
+        // Handle window resize
+        const currentWindow = remote.getCurrentWindow();
+        currentWindow.on('resize', _.debounce(e => {
+            const newHeight = e.sender.getContentSize()[1];
+
+            this.setState({
+                windowHeight: newHeight,
+            });
+        }, 10));
+
         this.state = {
+            windowHeight: remote.getCurrentWindow().getContentSize()[1],
+            firstRender: true,
+            headerHeight: 40,
             dbFolder: '/Users/david/Downloads/iftest/db',  //'',
             tables: [],
             selectedTableName: '',
@@ -25,7 +38,7 @@ class App extends React.Component {
     }
 
     render() {
-        const { dbFolder, tables, selectedTableName, selectedTableRows, findQuery } = this.state;
+        const { dbFolder, tables, selectedTableName, selectedTableRows, findQuery, windowHeight, headerHeight, firstRender } = this.state;
 
         const onClickBrowse = e => {
             e.preventDefault();
@@ -91,14 +104,18 @@ class App extends React.Component {
             await setTableRows(tableName);
         };
 
+        const tableNamesHeight = windowHeight - headerHeight - 10;
         const styles = {
             selectedBtn: {
                 backgroundColor: '#DDDDDD',
             },
-            scrollableRows: {
+            allSplits: {
+                maxHeight: tableNamesHeight,
+            },
+            scrollableTables: {
                 height: 'auto',
-                maxHeight: 600,
-                //minHeight: regionSplitSize,
+                maxHeight: tableNamesHeight,
+                minHeight: tableNamesHeight,
                 overflowX: 'hidden'
             },
         };
@@ -127,17 +144,24 @@ class App extends React.Component {
             return Columns( { columns, idx: 0, rows: selectedTableRows });
         };
 
+        if (firstRender) {
+            setTimeout(() => this.setState({
+                firstRender: false,
+                headerHeight: this.headerDiv.offsetHeight
+            }));
+        }
+
         return (
             <div className="container-fluid">
-                <div className="row mt-1">
+                <div ref={node => this.headerDiv = node} className="row mt-1">
                     <label htmlFor={dbFolderId} className="ml-2 mt-2">Database Folder: </label>
                     <div className="col mt-1">
                         <input type="text" id={dbFolderId} className="w-100" value={dbFolder} onChange={onChangeDbFolder} />
                     </div>
                     <button className="btn btn-outline-primary mr-2" onClick={onClickBrowse}>...</button>
                 </div>
-                <SplitPane split="vertical" defaultSize={200} minSize={150} maxSize={-100}>
-                    <div>
+                <SplitPane split="vertical" defaultSize={200} minSize={150} maxSize={-100} style={styles.allSplits}>
+                    <div style={styles.scrollableTables}>
                         {listTableNames()}
                     </div>
                     <div>
@@ -147,7 +171,7 @@ class App extends React.Component {
                                 <input type="text" id={findId} className="w-100" value={findQuery} onKeyDown={onKeyDownFindQuery} onChange={onChangeFindQuery} />
                             </div>
                         </div>
-                        <div className="m-0 p-0" style={styles.scrollableRows}>
+                        <div className="m-0 p-0">
                             {showSelectedTable()}
                         </div>
                     </div>

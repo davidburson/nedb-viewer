@@ -31,7 +31,7 @@ app.on('ready', async() => {
         width: 1000,    // wide enough for 4 images at the default image size
         height: 800,
         minWidth: 400,
-        minHeight: 460,
+        minHeight: 400,
     });
 
     appWindow.once('ready-to-show', () => {

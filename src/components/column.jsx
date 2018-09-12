@@ -12,7 +12,7 @@ const Columns = ({ columns, idx, rows }) => {
     const styles = {
         stripe: {
             backgroundColor: '#EEEEEE',
-        }
+        },
     };
 
     const createRows = () => {
