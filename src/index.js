@@ -28,8 +28,8 @@ if (process.env.NODE_ENV !== 'production') {
 app.on('ready', async() => {
     const appWindow = new BrowserWindow({
         show: false,
-        width: 500,    // wide enough for 4 images at the default image size
-        height: 500,
+        width: 1000,    // wide enough for 4 images at the default image size
+        height: 800,
         minWidth: 400,
         minHeight: 460,
     });

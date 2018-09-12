@@ -11,7 +11,6 @@ ipcRenderer.on('readyToShow', async() => {
     // this is how to log breadcrumbs on the main process to debug the renderer process, when we can't see the renderer console.
     //require('electron').ipcRenderer.send('logOnMain', 'ready1');
 
-    ipcRenderer.send('logOnMain', 'js 1');
     // *****************************************
     // Global error handler for renderer process
     // *****************************************
@@ -29,11 +28,9 @@ ipcRenderer.on('readyToShow', async() => {
         });
     };
 
-    ipcRenderer.send('logOnMain', 'js 2');
-
     try {
         ReactDOM.render(
-            <App />,
+            <App handleError={handleError} />,
             document.getElementById('js-app')
         );
     } catch (err) {
