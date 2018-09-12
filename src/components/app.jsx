@@ -35,7 +35,7 @@ class App extends React.Component {
             gridWidth: 0,
             firstRender: true,
             headerHeight: 40,
-            dbFolder: '/Users/david/Downloads/iftest/db',  //'',
+            dbFolder: '',
             tables: [],
             selectedTableName: '',
             selectedTableRows: [],
