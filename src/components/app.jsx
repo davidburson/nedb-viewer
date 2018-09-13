@@ -61,8 +61,8 @@ class App extends React.Component {
 
             remote.dialog.showOpenDialog(remote.getCurrentWindow(),
                 {
-                    title: 'nedb viewer',
-                    message: 'Select folder that contains nedb tables.',
+                    title: 'NeDB Viewer',
+                    message: 'Select folder that contains NeDB tables.',
                     properties: ['openDirectory', 'createDirectory']
                 }, dirName => {
                     if (!dirName) return;

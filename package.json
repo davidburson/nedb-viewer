@@ -5,7 +5,7 @@
   "build": {
     "electronVersion": "2.0.9",
     "appId": "com.fmosoft.nedb-viewer",
-    "productName": "Nedb Viewer",
+    "productName": "NeDB Viewer",
     "copyright": "Copyright © 2018 by fmosoft",
     "directories": {
       "app": "build",
@@ -21,21 +21,21 @@
           ]
         }
       ],
-      "icon": "public/images/literacy_images.ico"
+      "icon": "public/images/binoculars11.ico"
     },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.other",
-      "icon": "public/images/literacy_images.icns"
+      "icon": "public/images/binoculars11.icns"
     },
     "linux": {
       "target": "deb",
       "icon": "./public/images/linux-icons/",
-      "synopsis": "Nedb Viewer - Copyright 2018 by fmosoft.",
-      "description": "Nedb Viewer - Copyright 2018 by fmosoft.",
+      "synopsis": "NeDB Viewer - Copyright 2018 by fmosoft.",
+      "description": "NeDB Viewer - Copyright 2018 by fmosoft.",
       "category": "Other",
       "desktop": {
-        "Name": "Nedb Viewer"
+        "Name": "NeDB Viewer"
       }
     }
   },
