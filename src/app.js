@@ -2,8 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Swal from 'sweetalert2';
 import { ipcRenderer, remote } from 'electron';
-import fs from 'fs-extra-promise';
-import path from 'path';
 
 import App from './components/app';
 

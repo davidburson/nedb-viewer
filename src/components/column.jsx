@@ -47,13 +47,17 @@ const Columns = ({ columns, idx, rows, totalWidth, showRow }) => {
         };
 
         const getDisplayValue = value => {
-            return trimQuotes(JSON.stringify(value));
+            const trimmed = trimQuotes(JSON.stringify(value));
+            // we have to return something invisible that will force the div to take up space, or else the cell from
+            //  from the row below is rendered in this row.  I selected zwnj (zero-width-non-joiner), x200C.
+            return trimmed.length === 0 ? '\u200C' : trimmed;
         };
 
         return (
             rows.reduce((a, r, i) => {
                 const displayValue = getDisplayValue(r[columns[idx]]);
                 const style = i % 2 === 1 ? styles.stripe : {};
+
                 return ([
                     ...a,
                     <div key={r._id} className="row w-100 mx-0 px-0" style={style} onDoubleClick={() => showRow(r)}>
