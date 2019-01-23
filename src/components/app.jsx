@@ -11,6 +11,10 @@ import Columns from './column';
 const dbFolderId = 'dbFolderId';
 const findId = 'findId';
 const startRowId = 'startRowId';
+const updateId = 'updateId';
+const doUpdate = 'doUpdate';
+const doInsert = 'doInsert';
+const doDelete = 'doDelete';
 const maxRowsToShow = 60;   // Needs to be bigger than the most rows that can be visible.  On my big monitor, that's about 53.
 
 class App extends React.Component {
@@ -30,6 +34,8 @@ class App extends React.Component {
 
         const initialSize = remote.getCurrentWindow().getContentSize();
 
+        this.db = null;
+
         this.state = {
             windowHeight: initialSize[1],
             gridWidth: 0,
@@ -40,6 +46,10 @@ class App extends React.Component {
             selectedTableName: '',
             selectedTableRows: [],
             findQuery: '{}',
+            query: '',
+            updateDocs: '',
+            options: '',
+            updateType: '',
             startRowIdx: 0,
         };
 
@@ -52,7 +62,7 @@ class App extends React.Component {
 
     render() {
         const {
-            dbFolder, tables, selectedTableName, selectedTableRows, findQuery, windowHeight, gridWidth,
+            dbFolder, tables, selectedTableName, selectedTableRows, findQuery, updateType, query, updateDocs, options, windowHeight, gridWidth,
             headerHeight, firstRender, startRowIdx
         } = this.state;
 
@@ -89,7 +99,10 @@ class App extends React.Component {
         const onKeyDownFindQuery = async e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                await setTableRows(selectedTableName);
+
+                if (selectedTableName) {
+                    await setTableRows(selectedTableName);
+                }
             }
         };
 
@@ -98,20 +111,70 @@ class App extends React.Component {
             this.setState({ findQuery: e.target.value });
         };
 
+        const onKeyDownUpdateQuery = async e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+
+                switch (this.state.updateType) {
+                    case doInsert:
+                        await this.db.insertRows(looseJsonParse(updateDocs, 'insert'));
+                        break;
+                    case doUpdate:
+                        await this.db.updateRows(looseJsonParse(query, 'query'), looseJsonParse(updateDocs, 'update'), looseJsonParse(options, 'options'));
+                        break;
+                    case doDelete:
+                        await this.db.deleteRows(looseJsonParse(query, 'query'), looseJsonParse(options, 'options'));
+                        break;
+                }
+
+                setTableRows(selectedTableName);
+            }
+        };
+
+        const onChangeQuery = e => {
+            e.preventDefault();
+            this.setState({ query: e.target.value });
+        };
+
+        const onChangeDocs = e => {
+            e.preventDefault();
+            this.setState({ updateDocs: e.target.value });
+        };
+
+        const onChangeOptions = e => {
+            e.preventDefault();
+            this.setState({ options: e.target.value });
+        };
+
+        const onUpdateTypeChange = e => {
+            //e.preventDefault();
+            this.setState({ updateType: e.target.value });
+        };
+
+        const looseJsonParse = (obj, fieldName) => {
+            try {
+                if (!obj.startsWith('{') && !(obj.startsWith('['))) {
+                    throw (new Error(`${fieldName} must start with { or [`));
+                }
+
+                return Function('"use strict";return (' + obj + ')')();
+            } catch (err) {
+                err.message = `Syntax error in '${fieldName}:' ${err.message}`;
+                this.props.handleError(err);
+            }
+        };
 
         const setTableRows = async tableName => {
-            const looseJsonParse = obj => {
-                return Function('"use strict";return (' + obj + ')')();
-            };
+            this.db = new DB(dbFolder, tableName, this.props.handleError);
+            const rows = await this.db.getTableRows(looseJsonParse(findQuery, 'find'));
 
-            const db = new DB(dbFolder, tableName, this.props.handleError);
-            const rows = await db.getTableRows(looseJsonParse(findQuery));
-
-            this.setState({
-                selectedTableName: tableName,
-                selectedTableRows: rows,
-                startRowIdx: 0,
-            });
+            if (rows) {
+                this.setState({
+                    selectedTableName: tableName,
+                    selectedTableRows: rows,
+                    startRowIdx: 0,
+                });
+            }
         };
 
         const onChangeStartRowIdx = e => {
@@ -192,6 +255,14 @@ class App extends React.Component {
             }));
         }
 
+        const queryDisabled = updateType === doInsert || updateType === '';
+        const optionsDisabled = updateType === doInsert || updateType === '';
+        const updateDisabled = updateType === doDelete || updateType === '';
+
+        const queryExtraClass = queryDisabled ? 'text-muted' : '';
+        const updateExtraClass = updateDisabled ? 'text-muted' : '';
+        const optionsExtraClass = optionsDisabled ? 'text-muted' : '';
+
         return (
             <div className="container-fluid">
                 <div ref={node => this.headerDiv = node} className="row mt-1">
@@ -209,12 +280,48 @@ class App extends React.Component {
                     <div ref={node => this.gridDiv = node}>
                         <div className="row mt-1 mx-1">
                             <label htmlFor={findId} className="ml-2 mt-2">find: </label>
-                            <div className="col mt-1">
+                            <div className="col mt-1 pr-1">
                                 <input type="text" id={findId} className="w-100" value={findQuery}
                                        onKeyDown={onKeyDownFindQuery} onChange={onChangeFindQuery} />
                             </div>
                         </div>
-                        <div className="row mx-1">
+                        <div className="border border-dark m-1 py-2">
+                            <div className="row mx-3 d-flex justify-content-center" onChange={onUpdateTypeChange}>
+                                <div className="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="updateTypeInsert" value={doInsert} name="updateType"
+                                           className="custom-control-input" />
+                                    <label className="custom-control-label" htmlFor="updateTypeInsert">insert</label>
+                                </div>
+                                <div className="custom-control custom-radio custom-control-inline mx-5">
+                                    <input type="radio" id="updateTypeUpdate" value={doUpdate} name="updateType"
+                                           className="custom-control-input" />
+                                    <label className="custom-control-label" htmlFor="updateTypeUpdate">update</label>
+                                </div>
+                                <div className="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="updateTypeDelete" value={doDelete} name="updateType"
+                                           className="custom-control-input" />
+                                    <label className="custom-control-label" htmlFor="updateTypeDelete">delete</label>
+                                </div>
+                            </div>
+                            <div className="row mx-1">
+                                <div className="col mt-1 pl-1">
+                                    <label className={`ml-1 mr-2 ${queryExtraClass}`}>query:</label>
+                                    <input type="text" id={updateId} className="w-100" value={query} disabled={queryDisabled}
+                                           onKeyDown={onKeyDownUpdateQuery} onChange={onChangeQuery} />
+                                </div>
+                                <div className="col mt-1 pl-1">
+                                    <label className={`ml-2 mr-2 ${updateExtraClass}`}>update:</label>
+                                    <input type="text" id={updateId} className="w-100" value={updateDocs} disabled={updateDisabled}
+                                           onKeyDown={onKeyDownUpdateQuery} onChange={onChangeDocs} />
+                                </div>
+                                <div className="col mt-1 pl-1">
+                                    <label className={`ml-2 mr-2 ${optionsExtraClass}`}>options:</label>
+                                    <input type="text" id={updateId} className="w-100" value={options} disabled={optionsDisabled}
+                                           onKeyDown={onKeyDownUpdateQuery} onChange={onChangeOptions} />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row mx-1 mt-2">
                             <label htmlFor={startRowId} className="mt-1 mx-2">Row start index: </label>
                             <span>
                                 <input type="number" id={startRowId} style={styles.startRow} min={0}
